@@ -1,32 +1,41 @@
 # api
 from fastapi import FastAPI
 
-# google cloud sql
+# google cloud platform
 from google.cloud.sql.connector import Connector
+from google.auth import load_credentials_from_file
 
 # sqlalchemy
 from sqlalchemy import create_engine
 from sqlalchemy import text
 
-# read csv
-import pandas as pd
-
 # server
 import uvicorn
 
+# data manipulation
+import pandas as pd
+
+# file manipulation
+import os
+
 
 # credentials filepath
-pwrd = './credentials/db-password.txt'
+DB_PASSWORD = open(os.path.join('credentials', 'db-password.txt'), 'r').readline()
+
+fp = os.path.join("credentials", "globant-challenge-422803-f244aacbe22b.json")
+GOOGLE_CREDENTIALS = load_credentials_from_file(fp)[0]
 
 # initialize Cloud SQL Python Connector
-connector = Connector()
+connector = Connector(
+    credentials=GOOGLE_CREDENTIALS
+)
 
 def getconn():
     conn = connector.connect(
         "globant-challenge-422803:us-central1:globant-sql-db", # Cloud SQL Instance Connection Name
         "pymysql",
         user="db-user",
-        password=open(pwrd, 'r').readline(),
+        password=DB_PASSWORD,
         db="globant-db",
         ip_type="public"
         )
