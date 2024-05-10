@@ -8,6 +8,13 @@ from google.cloud.sql.connector import Connector
 from sqlalchemy import create_engine
 from sqlalchemy import text
 
+# read csv
+import pandas as pd
+
+# server
+import uvicorn
+
+
 # credentials filepath
 pwrd = './credentials/db-password.txt'
 
@@ -59,9 +66,30 @@ def hello():
     return {"Hello": "World"}
 
 
+@app.post('/migrate')
+async def migrate(fp: str, fp_departments: str):
+    """ Section 1"""
+    
+    # 1. insert jobs
+    query = text( """
+    INSERT INTO jobs (id, job) VALUES (:val1, :val2)
+    """)
+    
+    # Get data on dataframe to insert batch transcriptions
+    df = pd.read_csv(fp)
+    df.columns = ['id', 'job']
+    # batch insert
+    df.to_sql("jobs", con=pool, chunksize=1000, if_exists='append', method='multi', index=False)
+    
+        
+    return {'Data': 'sent'}
+
+
+
+
 @app.get('/quarter')
 def quarter():
-    """ Section 1: Metric 1"""
+    """ Section 2: Metric 1"""
     
     query = """
     SELECT
@@ -143,3 +171,13 @@ def department_hires():
     
     # Return Data
     return {"data": rows}
+
+
+if __name__ == "__main__":
+    
+    uvicorn.run(
+        "main:app",
+        host="127.0.0.1",
+        port=8000,
+        reload=True
+        )
