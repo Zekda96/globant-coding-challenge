@@ -70,12 +70,9 @@ def query_db(query: str):
 # initialize FastAPi instance
 app = FastAPI()
 
-@app.get('/')
-def hello():
-    return {"Hello": "World"}
 
 def batch_insert(table: str, cols: list, fp: str):
-    """ Upload historical data from CSV files to new DB
+    """ Upload historical data from CSV file to new DB
 
     Args:
         table (str): DB table name
@@ -107,13 +104,14 @@ async def migrate(fp_jobs: str, fp_departments: str, fp_employees: str):
     employees_cols = ['id', 'name', 'datetime', 'department_id', 'job_id']
     batch_insert('hired_employees', employees_cols, fp_employees)
 
-        
     return {'Data': 'sent'}
 
 
 @app.get('/quarter')
 def quarter():
-    """ Section 2: Metric 1"""
+    """ Section 2: Metric 1: End-point to retrieve number of employees hired
+    for each job and department in 2021 divided by quarter. The table is
+    ordered alphabetically by department and job."""
     
     query = """
     SELECT
@@ -147,8 +145,10 @@ def quarter():
 
 @app.get('/department_hires')
 def department_hires():
-    """ Section 1: Metric 2"""
-
+    """ Section 2: Metric 2: End-point to retireve list of ids, name and number of
+    employees hired of each department that hired more employees than the mean of
+    employees hired in 2021 for all the departments, ordered by the number of
+    employees hired (descending)."""
 
     query = """
     SELECT
@@ -198,7 +198,7 @@ def department_hires():
 
 
 if __name__ == "__main__":
-    
+    # Run server
     uvicorn.run(
         "main:app",
         host="127.0.0.1",
