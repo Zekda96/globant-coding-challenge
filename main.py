@@ -65,26 +65,41 @@ app = FastAPI()
 def hello():
     return {"Hello": "World"}
 
+def batch_insert(table: str, cols: list, fp: str):
+    """ Upload historical data from CSV files to new DB
 
+    Args:
+        table (str): DB table name
+        cols (list): Name of columns from table
+        fp (str): CSV filepath
+    """
+
+    # Get data on dataframe to batch insert
+    df = pd.read_csv(fp, header=None)
+    df.columns = cols
+
+    # single batch request that handles up to 1000 rows
+    df.to_sql(table, con=pool, chunksize=1000, if_exists='append', method='multi', index=False)
+    
+    
 @app.post('/migrate')
-async def migrate(fp: str, fp_departments: str):
-    """ Section 1"""
+async def migrate(fp_jobs: str, fp_departments: str, fp_employees: str):
+    """ Receive historical data from CSV files and inser data into new DB"""
     
-    # 1. insert jobs
-    query = text( """
-    INSERT INTO jobs (id, job) VALUES (:val1, :val2)
-    """)
+    # insert jobs.csv
+    jobs_cols = ['id', 'job']
+    batch_insert('jobs', jobs_cols, fp_jobs)
     
-    # Get data on dataframe to insert batch transcriptions
-    df = pd.read_csv(fp)
-    df.columns = ['id', 'job']
-    # batch insert
-    df.to_sql("jobs", con=pool, chunksize=1000, if_exists='append', method='multi', index=False)
+    # insert departments.csv
+    departments_cols = ['id', 'department']
+    batch_insert('departments', departments_cols, fp_departments)
     
+    # insert hired employees.csv
+    employees_cols = ['id', 'name', 'datetime', 'department_id', 'job_id']
+    batch_insert('hired_employees', employees_cols, fp_employees)
+
         
     return {'Data': 'sent'}
-
-
 
 
 @app.get('/quarter')
